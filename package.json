@@ -7,7 +7,9 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"dev": "parcel index.html",
+		"clean": "rm dist/bundle.js",
+		"build": "parcel build ./scrc/index.html",
+		"dev": "parcel ./src/index.html",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"keywords": [],
@@ -16,5 +18,8 @@
 	"dependencies": {
 		"lodash": "^4.17.15",
 		"qrcode": "^1.4.4"
+	},
+	"devDependencies": {
+		"parcel-bundler": "^1.12.4"
 	}
 }
