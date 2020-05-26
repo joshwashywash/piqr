@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+
+body {
+	height: 100vh;
+	margin: 0;
+	font-family: 'Open Sans', sans-serif;
+	font-size: 2rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+input {
+	font-family: inherit;
+}
+
+canvas {
+	margin: 2em;
+}
