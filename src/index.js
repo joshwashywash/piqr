@@ -1,29 +1,21 @@
 import _ from 'lodash';
-// import qrcode from 'qrcode';
 
-const createPalette = (pixels, iterations = 2) => {
-	const ranges = _.zip(...pixels).map(c => Math.max(...c) - Math.min(...c));
+import { range, maxElementIndex, nearest } from './math';
 
-	const maxRangeIndex = ranges.indexOf(Math.max(...ranges));
+const createPalette = (pixels, iterations = 0) => {
+	const ranges = _.zip(...pixels).map(range);
 
-	[...pixels].sort((a, b) => a[maxRangeIndex] - b[maxRangeIndex]);
+	const maxRangeIndex = maxElementIndex(ranges);
 
-	const halves = _.chunk(pixels, Math.ceil(pixels.length / 2));
+	const sorted = [...pixels].sort(
+		(a, b) => a[maxRangeIndex] - b[maxRangeIndex]
+	);
+	const halves = _.chunk(sorted, Math.ceil(sorted.length / 2));
 
-	return iterations === 0
-		? halves.map(half => _.zip(...half).map(color => Math.round(_.mean(color))))
+	return iterations <= 0
+		? halves.map(half => _.zip(...half).map(_.mean))
 		: halves.flatMap(half => createPalette(half, iterations - 1));
 };
-
-const dist = (a, b) =>
-	Math.hypot(..._.zip(a, b).map(c => c.reduce((prev, curr) => prev - curr)));
-
-const nearest = (pixel, palette) => {
-	const distances = palette.map(color => dist(pixel, color));
-	return palette[distances.indexOf(Math.min(...distances))];
-};
-
-const reader = new FileReader();
 
 const loadImage = path =>
 	new Promise(resolve => {
@@ -32,7 +24,9 @@ const loadImage = path =>
 		image.src = path;
 	});
 
-const canvas = document.getElementById('canvas');
+const reader = new FileReader();
+
+const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
 reader.addEventListener('load', () => {
@@ -43,7 +37,7 @@ reader.addEventListener('load', () => {
 
 		const { data } = context.getImageData(0, 0, width, height);
 		const pixels = _.chunk(Array.from(data), 4).map(_.initial);
-		const palette = createPalette(pixels);
+		const palette = createPalette(pixels, 4);
 
 		const newPixels = pixels.map((pixel, i) => [
 			...nearest(pixel, palette),
@@ -57,6 +51,13 @@ reader.addEventListener('load', () => {
 		);
 
 		context.putImageData(imageData, 0, 0);
+
+		// qrcode
+		// 	.toDataURL([{ data: imageData.data, mode: 'byte' }], {
+		// 		errorCorrectionLevel: 'low',
+		// 	})
+		// 	.then(console.log)
+		// 	.catch(console.error);
 	});
 });
 
