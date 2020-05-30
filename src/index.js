@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { range, maxElementIndex, nearest } from './math';
+import { range, maxElementIndex, nearest } from './util';
 
 const createPalette = (pixels, iterations = 0) => {
 	const ranges = _.zip(...pixels).map(range);
@@ -10,6 +10,7 @@ const createPalette = (pixels, iterations = 0) => {
 	const sorted = [...pixels].sort(
 		(a, b) => a[maxRangeIndex] - b[maxRangeIndex]
 	);
+
 	const halves = _.chunk(sorted, Math.ceil(sorted.length / 2));
 
 	return iterations <= 0
@@ -32,12 +33,12 @@ const context = canvas.getContext('2d');
 reader.addEventListener('load', () => {
 	loadImage(reader.result).then(image => {
 		const { width, height } = image;
-		[canvas.width, canvas.height] = [width, height];
+		[canvas.width, canvas.height] = [width, 2 * height];
 		context.drawImage(image, 0, 0, width, height);
 
 		const { data } = context.getImageData(0, 0, width, height);
 		const pixels = _.chunk(Array.from(data), 4).map(_.initial);
-		const palette = createPalette(pixels, 4);
+		const palette = createPalette(pixels);
 
 		const newPixels = pixels.map((pixel, i) => [
 			...nearest(pixel, palette),
@@ -50,7 +51,7 @@ reader.addEventListener('load', () => {
 			height
 		);
 
-		context.putImageData(imageData, 0, 0);
+		context.putImageData(imageData, 0, height);
 
 		// qrcode
 		// 	.toDataURL([{ data: imageData.data, mode: 'byte' }], {

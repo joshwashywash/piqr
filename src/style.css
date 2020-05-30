@@ -1,11 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
 
 body {
+	font-family: 'Open Sans', sans-serif;
+	font-size: 1.5rem;
+	background: black;
+	color: white;
 	height: 100vh;
 	margin: 0;
-	font-family: 'Open Sans', sans-serif;
 	display: flex;
-	font-size: 2rem;
 	flex-direction: column;
 	align-items: center;
 }
@@ -15,5 +17,12 @@ input {
 }
 
 canvas {
-	margin: 2em;
+	max-width: 100%;
+	margin: auto;
+}
+
+.input-container {
+	display: flex;
+	flex-direction: column;
+	margin: 0.5em;
 }

@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 const dist = (a, b) =>
 	Math.hypot(..._.zip(a, b).map(c => c.reduce((prev, curr) => prev - curr)));
 
