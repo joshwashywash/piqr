@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import qrcode from 'qrcode';
 
 import { range, maxElementIndex, nearest } from './util';
 
@@ -18,6 +19,18 @@ const createPalette = (pixels, iterations = 0) => {
 		: halves.flatMap(half => createPalette(half, iterations - 1));
 };
 
+const createQR = async data => {
+	try {
+		const qr = await qrcode.toDataURL([{ data, mode: 'byte' }], {
+			errorCorrectionLevel: 'low',
+		});
+	} catch (error) {
+		const div = document.createElement('div');
+		div.textContent = error.message;
+		document.body.appendChild(div);
+	}
+};
+
 const loadImage = path =>
 	new Promise(resolve => {
 		const image = new Image();
@@ -27,44 +40,52 @@ const loadImage = path =>
 
 const reader = new FileReader();
 
-const canvas = document.querySelector('canvas');
-const context = canvas.getContext('2d');
+const createCanvas = (width, height) => {
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	return canvas;
+};
 
-reader.addEventListener('load', () => {
-	loadImage(reader.result).then(image => {
-		const { width, height } = image;
-		[canvas.width, canvas.height] = [width, 2 * height];
-		context.drawImage(image, 0, 0, width, height);
+reader.addEventListener('load', async () => {
+	const image = await loadImage(reader.result);
+	const { width, height } = image;
 
-		const { data } = context.getImageData(0, 0, width, height);
-		const pixels = _.chunk(Array.from(data), 4).map(_.initial);
-		const palette = createPalette(pixels);
+	const canvas = createCanvas(width, height);
 
-		const newPixels = pixels.map((pixel, i) => [
-			...nearest(pixel, palette),
-			data[4 * i + 3],
-		]);
+	const context = canvas.getContext('2d');
 
-		const imageData = new ImageData(
-			new Uint8ClampedArray(newPixels.flat()),
-			width,
-			height
-		);
+	context.drawImage(image, 0, 0, width, height);
+	document.body.appendChild(canvas);
 
-		context.putImageData(imageData, 0, height);
+	const { data } = context.getImageData(0, 0, width, height);
 
-		// qrcode
-		// 	.toDataURL([{ data: imageData.data, mode: 'byte' }], {
-		// 		errorCorrectionLevel: 'low',
-		// 	})
-		// 	.then(console.log)
-		// 	.catch(console.error);
-	});
+	const pixels = _.chunk(Array.from(data), 4).map(_.initial);
+
+	const palette = createPalette(pixels);
+
+	const newPixels = pixels.map((pixel, i) => [
+		...nearest(pixel, palette),
+		data[4 * i + 3],
+	]);
+
+	const imageData = new ImageData(
+		new Uint8ClampedArray(newPixels.flat()),
+		width,
+		height
+	);
+
+	const pixelatedCanvas = createCanvas(width, height);
+	const pixelatedContext = pixelatedCanvas.getContext('2d');
+
+	pixelatedContext.putImageData(imageData, 0, 0);
+	document.body.appendChild(pixelatedCanvas);
 });
 
 const input = document.body.querySelector('input');
 
 input.addEventListener('change', () => {
+	document.body.querySelectorAll('canvas').forEach(canvas => canvas.remove());
 	const { files } = input;
 	if (files.length !== 0) reader.readAsDataURL(files.item(0));
 });
