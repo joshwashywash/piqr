@@ -1,34 +1,44 @@
-import _ from 'lodash';
-import qrcode from 'qrcode';
+const max = array => array.reduce((prev, curr) => Math.max(prev, curr));
 
-import { range, maxElementIndex, nearest } from './util';
+const min = array => array.reduce((prev, curr) => Math.min(prev, curr));
 
-const createPalette = (pixels, iterations = 0) => {
-	const ranges = _.zip(...pixels).map(range);
+const mean = array =>
+	Math.ceil(array.reduce((prev, curr) => prev + curr) / array.length);
 
+const dist = (a, b) =>
+	Math.hypot(...zip([a, b]).map(c => c.reduce((prev, curr) => prev - curr)));
+
+const maxElementIndex = array => array.indexOf(max(array));
+
+const nearest = (pixel, palette) => {
+	const distances = palette.map(color => dist(pixel, color));
+	return palette[distances.indexOf(min(distances))];
+};
+
+const range = array => max(array) - min(array);
+
+const removeEveryNth = (array, n) => array.filter((_, i) => (i + 1) % n);
+
+const chunk = (array, n) => {
+	const length = Math.ceil(array.length / n);
+	return Array.from({ length }, (_, i) => array.slice(n * i, n * i + n));
+};
+
+const zip = arrays => {
+	const length = min(arrays.map(array => array.length));
+	return Array.from({ length }, (_, i) => arrays.map(array => array[i]));
+};
+
+const createPalette = (pixels, iterations = 2) => {
+	const ranges = zip(pixels).map(range);
 	const maxRangeIndex = maxElementIndex(ranges);
-
 	const sorted = [...pixels].sort(
 		(a, b) => a[maxRangeIndex] - b[maxRangeIndex]
 	);
-
-	const halves = _.chunk(sorted, Math.ceil(sorted.length / 2));
-
+	const halves = chunk(sorted, Math.ceil(sorted.length / 2));
 	return iterations <= 0
-		? halves.map(half => _.zip(...half).map(_.mean))
+		? halves.map(half => zip(half).map(mean))
 		: halves.flatMap(half => createPalette(half, iterations - 1));
-};
-
-const createQR = async data => {
-	try {
-		const qr = await qrcode.toDataURL([{ data, mode: 'byte' }], {
-			errorCorrectionLevel: 'low',
-		});
-	} catch (error) {
-		const div = document.createElement('div');
-		div.textContent = error.message;
-		document.body.appendChild(div);
-	}
 };
 
 const loadImage = path =>
@@ -38,8 +48,6 @@ const loadImage = path =>
 		image.src = path;
 	});
 
-const reader = new FileReader();
-
 const createCanvas = (width, height) => {
 	const canvas = document.createElement('canvas');
 	canvas.width = width;
@@ -47,12 +55,12 @@ const createCanvas = (width, height) => {
 	return canvas;
 };
 
+const reader = new FileReader();
 reader.addEventListener('load', async () => {
 	const image = await loadImage(reader.result);
 	const { width, height } = image;
 
 	const canvas = createCanvas(width, height);
-
 	const context = canvas.getContext('2d');
 
 	context.drawImage(image, 0, 0, width, height);
@@ -60,17 +68,17 @@ reader.addEventListener('load', async () => {
 
 	const { data } = context.getImageData(0, 0, width, height);
 
-	const pixels = _.chunk(Array.from(data), 4).map(_.initial);
+	const noAlphas = removeEveryNth(data, 4);
+	const pixels = chunk(noAlphas, 3);
 
 	const palette = createPalette(pixels);
 
-	const newPixels = pixels.map((pixel, i) => [
-		...nearest(pixel, palette),
-		data[4 * i + 3],
-	]);
+	const newData = pixels
+		.map((pixel, i) => [...nearest(pixel, palette), data[4 * i + 3]])
+		.flat();
 
 	const imageData = new ImageData(
-		new Uint8ClampedArray(newPixels.flat()),
+		new Uint8ClampedArray(newData),
 		width,
 		height
 	);

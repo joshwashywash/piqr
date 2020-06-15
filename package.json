@@ -16,7 +16,6 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"lodash": "^4.17.15",
 		"qrcode": "^1.4.4"
 	},
 	"devDependencies": {
